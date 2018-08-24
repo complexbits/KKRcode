@@ -143,7 +143,7 @@ void readMakey(){
     if ( kissTime >= longKiss && !MP3player.isPlaying()){ // If the kiss has been going a while...
       
       playRandomSound(2); // Long kiss soundmode=2         
-      prevKiss=0; // reset kiss counter
+      kissTime_init=float(millis()); // reset kiss length timer
     }
     
   }else{ // Input pin LOW ////////////////////////////////////////////
@@ -161,14 +161,6 @@ void readMakey(){
     
     prevNoKiss++;  // count continous gap loop iterations
     gapTime = float(millis()) - gapTime_init; // current gap length
-
-    if (prevNoKiss % 100 ==0) {
-      Serial.print("Gap Time: ");
-      Serial.print(gapTime);
-      Serial.print(" ");
-      Serial.print(prevNoKiss);
-      Serial.println();
-    }
     
     if ( gapTime >= longGap && !MP3player.isPlaying()){ // If the gap has been going a while...
       
@@ -178,7 +170,7 @@ void readMakey(){
   }
 }
 
-// playRandomSound setup
+// playRandomSound setup /////////////////////////////////////////////
 
 char* soundDirs[]={"Callout","Normal","LongKiss","FastKiss"}; // Specify directory names on SD card
 int filesPerDir[]={100,100,100,100}; // TODO: Add file number detection function to setup routine
@@ -200,8 +192,10 @@ void playRandomSound (int soundmode){
   //MP3player.playMP3(playSound);
   
   Serial.print("Playing sound: ");
-  Serial.println(thisSound);
-  //Serial.print(" ");
+  Serial.print(soundDirs[soundmode]);
+  Serial.print("/");
+  Serial.print(thisSound);
+  Serial.println();
   //Serial.println(playSound);
   
 }  
