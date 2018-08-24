@@ -41,9 +41,9 @@ int makeyTouch = 0; //DDT
 #endif
 
 // Kiss Timing Variables
-int maxKissLength=5; // max kiss length in Seconds
-int maxGapLength=10; // max gap length in Seconds
-int maxKPM = 100; // fastest kiss speed in Kisses Per Minute
+int maxKissLength=4; // max kiss length in Seconds
+int maxGapLength=15; // max gap length in Seconds
+int maxKPM = 120; // fastest kiss speed in Kisses Per Minute
 
 
 void setup(){  
@@ -172,7 +172,7 @@ void readMakey(){
 
 // playRandomSound setup /////////////////////////////////////////////
 
-char* soundDirs[]={"Callout","Normal","LongKiss","FastKiss"}; // Specify directory names on SD card
+char* soundDirs[]={"Attract","Normal","Long","Fast"}; // Specify directory names on SD card
 int filesPerDir[]={100,100,100,100}; // TODO: Add file number detection function to setup routine
 
 String thisSound;
@@ -189,12 +189,12 @@ void playRandomSound (int soundmode){
   thisSound = String(random(filesPerDir[soundmode]), DEC); 
   thisSound = String(thisSound + ".MP3");
   thisSound.toCharArray(playSound, 8);
-  //MP3player.playMP3(playSound);
+  MP3player.playMP3(playSound);
   
   Serial.print("Playing sound: ");
   Serial.print(soundDirs[soundmode]);
   Serial.print("/");
-  Serial.print(thisSound);
+  Serial.print(playSound);
   Serial.println();
   //Serial.println(playSound);
   
