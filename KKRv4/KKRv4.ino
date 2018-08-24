@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 Kiss Kiss Revolution v4
 Interaction Logic & Sound Control for the Bare Conductive Board
@@ -9,7 +8,7 @@ Jamie Schwettmann
 
 *******************************************************************************/
 
-// compiler error handling
+// compiler error handling (environment control)
 #include "Compiler_Errors.h"
 
 // touch includes
@@ -27,12 +26,14 @@ Jamie Schwettmann
 // mp3 variables
 SFEMP3Shield MP3player;
 byte result;
-int makeyPin = 10; //DDT
-int makeyTouch = 0; //DDT
 
 // sd card instantiation
 SdFat sd;
 SdFile file;
+
+// incoming Makey Makey input
+int makeyPin = 10; //DDT
+int makeyTouch = 0; //DDT
 
 // define LED_BUILTIN for older versions of Arduino
 #ifndef LED_BUILTIN
@@ -49,31 +50,31 @@ void setup(){
   Serial.begin(192000);
   
   pinMode(LED_BUILTIN, OUTPUT);
-   
+  
   Serial.println("...");
   Serial.println("Bare Conductive Random Touch MP3 player");
-
+  
   // initialise the Arduino pseudo-random number generator with 
   // a bit of noise for extra randomness - this is good general practice
   randomSeed(analogRead(0));
-
+  
   if(!sd.begin(SD_SEL, SPI_HALF_SPEED)) sd.initErrorHalt();
-
+  
   if(!MPR121.begin(MPR121_ADDR)) Serial.println("error setting up MPR121");
   MPR121.setInterruptPin(MPR121_INT);
-
-
+  
+  
   MPR121.setTouchThreshold(5); // Are these milliseconds? Volts?
   MPR121.setReleaseThreshold(50);
-
+  
   result = MP3player.begin();
   MP3player.setVolume(10,10);
- 
+  
   if(result != 0) {
     Serial.print("Error code: ");
     Serial.print(result);
     Serial.println(" when trying to start MP3 player");
-   }
+  }
 }
 
 // Initialize kiss counters
@@ -94,186 +95,104 @@ float thisKPM=0;
 float thisKPM_time=0;
 float lastKPM_time=0;
 
-
 // Main Loop
 void loop(){
   readMakey();
 }
 
-
 // Touch Detection & Logic
 void readMakey(){ 
-
- makeyTouch = digitalRead(makeyPin);   // read the input pin
- 
-   if (makeyTouch){ // If the input pin is HIGH //////////////////////////////////
-    
-        if ( prevKiss==0 ){  // new touch
-          
-            kissTime_init=float(millis()); // timestamp for touch initiation
-            digitalWrite(LED_BUILTIN, HIGH); // light LED
-            Serial.println("pin was just touched");
-            
-            playRandomTrack(1);  // play track on new touch (normal soundmode=1)
-
-            // Reset gap counters   
-            prevNoKiss=0;          
-            gapTime=0;
-            gapTime_init=0;
-
-            // count new kisses
-            newKiss++;
-
-            if ( newKiss % 5 == 0 ){ // every 5 kisses, calculate KPM
-                thisKPM_time=float(millis()); // timestamp now
-                thisKPM = 5/((lastKPM_time - thisKPM_time)/60000); // 5 kisses in this many minutes
-                Serial.print("KPM ");
-                Serial.println(thisKPM);
-                lastKPM_time=thisKPM_time; // update last timestamp
-            }
-        }
-        
-        prevKiss++;  // count continuous kiss loop iterations
-        kissTime = float(millis()) - kissTime_init; // current kiss length
-
-        if ( kissTime >= longKiss ){
-            // Do stuff if the kiss has been going a while. (Long kiss soundmode=2)
-            playRandomTrack(2);
-            
-            // reset kiss counter
-            prevKiss=0;
-         }
-           
-    }else{ // Input pin LOW ////////////////////////////////////////////
-      
-        if ( prevNoKiss==0 ){ // new gap
-            
-            gapTime_init=float(millis()); // timestamp for gap initiation
-            digitalWrite(LED_BUILTIN, LOW); // stop LED 
-
-            // Reset touch counters
-            prevKiss = 0; 
-            kissTime=0;
-            kissTime_init=0;
-
-        }
-      
-      prevNoKiss++;  // count continous gap loop iterations
-      gapTime = float(millis()) - gapTime_init; // current gap length
-
-      if ( gapTime >= longGap ){
-          // Do stuff if the gap has been going a while. (Callout soundmode=0)
-          playRandomTrack(0);
-          
-          // reset gap counter
-          prevNoKiss=0;
-      }    
-   }
-   
-}
-
-
-
-/** Replacing void playRandomTrack(int electrode){ with void playRandomTrack(int soundmode){
-    Soundmodes will be stored in folders accessed similarly to electrode folders.
-    Soundmodes are activated by kiss frequency detection
-**/
-
-void playRandomTrack(int soundmode){
   
-
-	// build our directory name from the electrode
-	char thisFilename[14]; // allow for 8 + 1 + 3 + 1 (8.3 with terminating null char)
-	// start with "E00" as a placeholder
-	char thisDirname[] = "E00";
-
-
-		// if <10, replace first digit...
-		thisDirname[1] = soundmode + '0';
-		// ...and add a null terminating character
-		thisDirname[2] = 0;
-
-
-	sd.chdir(); // set working directory back to root (in case we were anywhere else)
-	if(!sd.chdir(thisDirname)){ // select our directory
-		Serial.println("error selecting directory"); // error message if reqd.
-	}
-
-	size_t filenameLen;
-	char* matchPtr;
-	unsigned int numMP3files = 0;
-
-	// we're going to look for and count
-	// the MP3 files in our target directory
-  while (file.openNext(sd.vwd(), O_READ)) {
-    file.getFilename(thisFilename);
-    file.close();
-
-    // sorry to do this all without the String object, but it was
-    // causing strange lockup issues
-    filenameLen = strlen(thisFilename);
-    matchPtr = strstr(thisFilename, ".MP3");
-    // basically, if the filename ends in .MP3, we increment our MP3 count
-    if(matchPtr-thisFilename==filenameLen-4) numMP3files++;
-  }
-
-  // generate a random number, representing the file we will play
-  unsigned int chosenFile = random(numMP3files);
-
-  // loop through files again - it's repetitive, but saves
-  // the RAM we would need to save all the filenames for subsequent access
-	unsigned int fileCtr = 0;
-
- 	sd.chdir(); // set working directory back to root (to reset the file crawler below)
-	if(!sd.chdir(thisDirname)){ // select our directory (again)
-		Serial.println("error selecting directory"); // error message if reqd.
-	} 
-
-  while (file.openNext(sd.vwd(), O_READ)) {
-    file.getFilename(thisFilename);
-    file.close();
-
-    filenameLen = strlen(thisFilename);
-    matchPtr = strstr(thisFilename, ".MP3");
-    // this time, if we find an MP3 file...
-    if(matchPtr-thisFilename==filenameLen-4){
-    	// ...we check if it's the one we want, and if so play it...
-    	if(fileCtr==chosenFile){
-    		// this only works because we're in the correct directory
-    		// (via sd.chdir() and only because sd is shared with the MP3 player)
-				Serial.print("playing track ");
-				Serial.println(thisFilename); // should update this for long file names
-				MP3player.playMP3(thisFilename);
-				return;
-    	} else {
-    			// ...otherwise we increment our counter
-    		fileCtr++;
-    	}
+  makeyTouch = digitalRead(makeyPin);   // read the input pin
+  
+  if (makeyTouch){ // If the input pin is HIGH //////////////////////////////////
+    
+    if ( prevKiss==0 ){  // new kiss
+      
+      kissTime_init=float(millis()); // timestamp for touch initiation
+      digitalWrite(LED_BUILTIN, HIGH); // light LED
+      Serial.println("pin was just touched");
+      
+      // Reset gap counters   
+      prevNoKiss=0;          
+      gapTime=0;
+      gapTime_init=0;
+      
+      newKiss++; // count new kisses
+      
+      if ( newKiss % 5 == 0 ){ // every 5 kisses, calculate KPM
+        thisKPM_time=float(millis()); // timestamp now
+        thisKPM = 5.0/((lastKPM_time - thisKPM_time)/60000); // 5 kisses in this many minutes
+        Serial.print("KPM ");
+        Serial.println(thisKPM);
+        lastKPM_time=thisKPM_time; // update last timestamp
+      }
+      
+      if (!MP3player.isPlaying()){ // if a track isn't currently playing...
+        if (thisKPM >= maxKPM){
+          playRandomSound(3); // Fast Kiss soundmode=3
+        }else{
+          playRandomSound(1);  // Normal Kiss soundmode=1
+        }
+      }
     }
-  }  
+    
+    prevKiss++;  // count continuous kiss loop iterations
+    kissTime = float(millis()) - kissTime_init; // current kiss length
+    
+    if ( kissTime >= longKiss && !MP3player.isPlaying()){ // If the kiss has been going a while...
+      
+      playRandomSound(2); // Long kiss soundmode=2         
+      prevKiss=0; // reset kiss counter
+    }
+    
+  }else{ // Input pin LOW ////////////////////////////////////////////
+    
+    if ( prevNoKiss==0 ){ // new gap
+      
+      gapTime_init=float(millis()); // timestamp for gap initiation
+      digitalWrite(LED_BUILTIN, LOW); // stop LED 
+      
+      // Reset touch counters
+      prevKiss = 0; 
+      kissTime=0;
+      kissTime_init=0;
+    }
+    
+    prevNoKiss++;  // count continous gap loop iterations
+    gapTime = float(millis()) - gapTime_init; // current gap length
+    
+    if ( gapTime >= longGap && !MP3player.isPlaying()){ // If the gap has been going a while...
+      
+      playRandomSound(0); // Callout soundmode=0        
+      prevNoKiss=0; // reset gap counter
+    }    
+  }
 }
 
-/**
- Bare Conductive code written by Stefan Dzisiewski-Smith and Peter Krige  
- Copyright (c) 2016, Bare Conductive
- 
- This work is licensed under a MIT license https://opensource.org/licenses/MIT
- 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
- **/
+// playRandomSound setup
+
+char* soundDirs[]={"Callout","Normal","LongKiss","FastKiss"}; // Specify directory names on SD card
+int filesPerDir[]={100,100,100,100}; // TODO: Add file number detection function to setup routine
+
+String thisSound;
+char playSound[8];
+
+void playRandomSound (int soundmode){
+  
+  Serial.print("Soundmode activated: ");
+  Serial.println(soundDirs[soundmode]);
+  
+  sd.chdir(); // Reset directory
+  sd.chdir(soundDirs[soundmode]); // Change to appropriate soundmode directory
+  
+  thisSound = String(random(filesPerDir[soundmode]) + ".MP3");
+  thisSound.toCharArray(playSound, 8);
+  MP3player.playMP3(playSound);
+  
+  Serial.print("Playing sound: ");
+  Serial.print(thisSound);
+  Serial.print(" ");
+  Serial.println(playSound);
+  
+}  
