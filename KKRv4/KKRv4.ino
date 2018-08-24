@@ -87,6 +87,8 @@ int lastPlayed = 0;
 int makeyPin = 10; //DDT
 int makeyTouch = 0; //DDT
 
+
+
 // sd card instantiation
 SdFat sd;
 SdFile file;
@@ -109,7 +111,7 @@ void setup(){
   
   pinMode(LED_BUILTIN, OUTPUT);
    
-  //while (!Serial) ; {} //uncomment when using the serial monitor 
+  Serial.println("...");
   Serial.println("Bare Conductive Random Touch MP3 player");
 
   // initialise the Arduino pseudo-random number generator with 
@@ -122,7 +124,7 @@ void setup(){
   MPR121.setInterruptPin(MPR121_INT);
 
 
-  MPR121.setTouchThreshold(5);
+  MPR121.setTouchThreshold(5); // Are these milliseconds? Volts?
   MPR121.setReleaseThreshold(50);
 
   result = MP3player.begin();
@@ -133,145 +135,115 @@ void setup(){
     Serial.print(result);
     Serial.println(" when trying to start MP3 player");
    }
+}
+
+// Initialize touch counters
+int prevTouch=0;
+int newTouch=0; 
+int prevNoTouch=0; 
+
+// Initialize touch timers
+float touchSecs=0; 
+float touchSecs_init=0;
+
+float notouchSecs=0;
+float notouchSecs_init=0;
+
+int longTouch = 20000;
+int longNoTouch = 100000;
+int minTouchCycle = 5000;
+
+
+void loop(){
+
+  readMakey();
+
+}
+
+
+void readMakey(){ 
+
+ makeyTouch = digitalRead(makeyPin);   // read the input pin
+ 
+   if (makeyTouch){ // If the input pin is HIGH //////////////////////////////////
+    
+        if (prevTouch==0){  // new touch
+          
+            touchSecs_init=float(now()); // timestamp for touch initiation
+            digitalWrite(LED_BUILTIN, HIGH); // light LED
+            Serial.println("pin was just touched");
+            
+            playRandomTrack(1);  // play track on new touch (normal soundmode=1)
+
+            // Reset gap counters   
+            prevNoTouch=0;          
+            notouchSecs=0;
+            notouchSecs_init=0;
+
+            // count new touches
+            newTouch++;
+        }
+        
+        prevTouch++;  // count continuous touch loop iterations
+        touchSecs = float(now()) - touchSecs_init; // current touch length
+
+        if (touchSecs>=longTouch){
+            // Do stuff if the touch has been going a while. (Long kiss soundmode=2)
+            playRandomTrack(2);
+            
+            // reset touch counter
+            prevTouch=0;
+         }
+           
+    }else{ // Input pin LOW ////////////////////////////////////////////
+      
+        if (prevNoTouch==0){ // new gap
+            
+            notouchSecs_init=float(now()); // timestamp for gap initiation
+            digitalWrite(LED_BUILTIN, LOW); // stop LED 
+
+            // Reset touch counters
+            prevTouch = 0; 
+            touchSecs=0;
+            touchSecs_init=0;
+
+        }
+      
+      prevNoTouch++;  // count continous gap loop iterations
+      notouchSecs = float(now()) - notouchSecs_init; // current gap length
+
+      if (notouchSecs>=longNoTouch){
+          // Do stuff if the gap has been going a while. (Callout soundmode=0)
+          playRandomTrack(0);
+          
+          // reset gap counter
+          prevNoTouch=0;
+      }    
+   }
    
 }
 
-void loop(){
- //readTouchInputs();
-  readMakey();
 
 
+/** Replacing void playRandomTrack(int electrode){ with void playRandomTrack(int soundmode){
+    Soundmodes will be stored in folders accessed similarly to electrode folders.
+    Soundmodes are activated by kiss frequency detection
+**/
+
+void playRandomTrack(int soundmode){
   
-}
-
-int prevTouch = 0; 
-void readMakey(){
-
- makeyTouch = digitalRead(makeyPin);   // read the input pin
- //digitalWrite(LED_BUILTIN, makeyTouch);    // sets the LED to the button's value
-
-
-//////////////
-   if(makeyTouch){ 
-      for (int i=0; i < 12; i++){  // Check which electrodes were pressed
-        if(makeyTouch&&prevTouch==0){        
-            //pin i was just touched
-            Serial.print("pin ");
-            Serial.print(i);
-            Serial.println(" was just touched");
-            digitalWrite(LED_BUILTIN, HIGH);
-            if(MP3player.isPlaying()){
-              if(lastPlayed==i && !REPLAY_MODE){
-                // if we're already playing from the requested folder, stop it
-                MP3player.stopTrack();
-                Serial.println("stopping track");
-              } else {
-                // if we're already playing a different track, stop that 
-                // one and play the newly requested one
-                MP3player.stopTrack();
-                Serial.println("stopping track");
-                playRandomTrack(i);
-                
-                // don't forget to update lastPlayed - without it we don't
-                // have a history
-                lastPlayed = i;
-              }
-            } else {
-              // if we're playing nothing, play the requested track 
-              // and update lastplayed
-              playRandomTrack(i);
-              lastPlayed = i;
-            }  
-            prevTouch =1;   
-        } else {
-          if(!makeyTouch){
-            Serial.print("pin ");
-            Serial.print(i);
-            Serial.println(" is no longer being touched");
-            digitalWrite(LED_BUILTIN, LOW);
-          } 
-        }
-      }
-    }
-    else{
-      prevTouch = 0; 
-       digitalWrite(LED_BUILTIN, LOW);
-      }
- ////////////////
-
-  
-}
-
-void readTouchInputs(){
-  if(MPR121.touchStatusChanged()){
-    
-    MPR121.updateTouchData();
-
-    // only make an action if we have one or fewer pins touched
-    // ignore multiple touches
-    
-    if(MPR121.getNumTouches()<=1){
-      for (int i=0; i < 12; i++){  // Check which electrodes were pressed
-        if(MPR121.isNewTouch(i)){        
-            //pin i was just touched
-            Serial.print("pin ");
-            Serial.print(i);
-            Serial.println(" was just touched");
-            digitalWrite(LED_BUILTIN, HIGH);
-            if(MP3player.isPlaying()){
-              if(lastPlayed==i && !REPLAY_MODE){
-                // if we're already playing from the requested folder, stop it
-                MP3player.stopTrack();
-                Serial.println("stopping track");
-              } else {
-                // if we're already playing a different track, stop that 
-                // one and play the newly requested one
-                MP3player.stopTrack();
-                Serial.println("stopping track");
-                playRandomTrack(i);
-                
-                // don't forget to update lastPlayed - without it we don't
-                // have a history
-                lastPlayed = i;
-              }
-            } else {
-              // if we're playing nothing, play the requested track 
-              // and update lastplayed
-              
-              playRandomTrack(i);
-              lastPlayed = i;
-            }     
-        } else {
-          if(MPR121.isNewRelease(i)){
-            Serial.print("pin ");
-            Serial.print(i);
-            Serial.println(" is no longer being touched");
-            digitalWrite(LED_BUILTIN, LOW);
-          } 
-        }
-      }
-    }
-  }
-}
-
-void playRandomTrack(int electrode){
 
 	// build our directory name from the electrode
 	char thisFilename[14]; // allow for 8 + 1 + 3 + 1 (8.3 with terminating null char)
 	// start with "E00" as a placeholder
 	char thisDirname[] = "E00";
 
-	if(electrode<10){
+
 		// if <10, replace first digit...
-		thisDirname[1] = electrode + '0';
+		thisDirname[1] = soundmode + '0';
 		// ...and add a null terminating character
 		thisDirname[2] = 0;
-	} else {
-		// otherwise replace both digits and use the null
-		// implicitly created in the original declaration
-		thisDirname[1] = (electrode/10) + '0';
-		thisDirname[2] = (electrode%10) + '0';
-	}
+
 
 	sd.chdir(); // set working directory back to root (in case we were anywhere else)
 	if(!sd.chdir(thisDirname)){ // select our directory
