@@ -43,7 +43,7 @@ int makeyTouch = 0; //DDT
 // Kiss Timing Variables
 int maxKissLength=5; // max kiss length in Seconds
 int maxGapLength=10; // max gap length in Seconds
-int maxKPM = 80; // fastest kiss speed in Kisses Per Minute
+int maxKPM = 100; // fastest kiss speed in Kisses Per Minute
 
 
 void setup(){  
@@ -78,9 +78,9 @@ void setup(){
 }
 
 // Initialize kiss counters
-int prevKiss=0;
-int newKiss=0; 
-int prevNoKiss=0; 
+long int prevKiss=0;
+long int newKiss=0; 
+long int prevNoKiss=0; 
 
 // Initialize touch timers
 float kissTime=0; 
@@ -122,7 +122,7 @@ void readMakey(){
       
       if ( newKiss % 5 == 0 ){ // every 5 kisses, calculate KPM
         thisKPM_time=float(millis()); // timestamp now
-        thisKPM = 5.0/((lastKPM_time - thisKPM_time)/60000); // 5 kisses in this many minutes
+        thisKPM = 5.0/((thisKPM_time - lastKPM_time)/60000); // 5 kisses in this many minutes
         Serial.print("KPM ");
         Serial.println(thisKPM);
         lastKPM_time=thisKPM_time; // update last timestamp
@@ -161,6 +161,14 @@ void readMakey(){
     
     prevNoKiss++;  // count continous gap loop iterations
     gapTime = float(millis()) - gapTime_init; // current gap length
+
+    if (prevNoKiss % 100 ==0) {
+      Serial.print("Gap Time: ");
+      Serial.print(gapTime);
+      Serial.print(" ");
+      Serial.print(prevNoKiss);
+      Serial.println();
+    }
     
     if ( gapTime >= longGap && !MP3player.isPlaying()){ // If the gap has been going a while...
       
@@ -186,13 +194,14 @@ void playRandomSound (int soundmode){
   sd.chdir(); // Reset directory
   sd.chdir(soundDirs[soundmode]); // Change to appropriate soundmode directory
   
-  thisSound = String(random(filesPerDir[soundmode]) + ".MP3");
+  thisSound = String(random(filesPerDir[soundmode]), DEC); 
+  thisSound = String(thisSound + ".MP3");
   thisSound.toCharArray(playSound, 8);
-  MP3player.playMP3(playSound);
+  //MP3player.playMP3(playSound);
   
   Serial.print("Playing sound: ");
-  Serial.print(thisSound);
-  Serial.print(" ");
-  Serial.println(playSound);
+  Serial.println(thisSound);
+  //Serial.print(" ");
+  //Serial.println(playSound);
   
 }  
