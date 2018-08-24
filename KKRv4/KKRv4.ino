@@ -11,12 +11,6 @@ Jamie Schwettmann
 // compiler error handling (environment control)
 #include "Compiler_Errors.h"
 
-// touch includes
-#include <MPR121.h>
-#include <Wire.h>
-#define MPR121_ADDR 0x5C
-#define MPR121_INT 4
-
 // mp3 includes
 #include <SPI.h>
 #include <SdFat.h>
@@ -59,13 +53,6 @@ void setup(){
   randomSeed(analogRead(0));
   
   if(!sd.begin(SD_SEL, SPI_HALF_SPEED)) sd.initErrorHalt();
-  
-  if(!MPR121.begin(MPR121_ADDR)) Serial.println("error setting up MPR121");
-  MPR121.setInterruptPin(MPR121_INT);
-  
-  
-  MPR121.setTouchThreshold(5); // Are these milliseconds? Volts?
-  MPR121.setReleaseThreshold(50);
   
   result = MP3player.begin();
   MP3player.setVolume(10,10);
@@ -162,7 +149,7 @@ void readMakey(){
     prevNoKiss++;  // count continous gap loop iterations
     gapTime = float(millis()) - gapTime_init; // current gap length
     
-    if ( gapTime >= longGap && !MP3player.isPlaying()){ // If the gap has been going a while...
+    if ( gapTime >= longGap ){ // If the gap has been going a while...
       
       playRandomSound(0); // Callout soundmode=0        
       prevNoKiss=0; // reset gap counter
@@ -173,7 +160,7 @@ void readMakey(){
 // playRandomSound setup /////////////////////////////////////////////
 
 char* soundDirs[]={"Attract","Normal","Long","Fast"}; // Specify directory names on SD card
-int filesPerDir[]={100,100,100,100}; // TODO: Add file number detection function to setup routine
+int filesPerDir[]={7,122,8,4}; // TODO: Add file number detection function to setup routine
 
 String thisSound;
 char playSound[8];
@@ -186,7 +173,7 @@ void playRandomSound (int soundmode){
   sd.chdir(); // Reset directory
   sd.chdir(soundDirs[soundmode]); // Change to appropriate soundmode directory
   
-  thisSound = String(random(filesPerDir[soundmode]), DEC); 
+  thisSound = String(random(0, filesPerDir[soundmode]), DEC); 
   thisSound = String(thisSound + ".MP3");
   thisSound.toCharArray(playSound, 8);
   MP3player.playMP3(playSound);
