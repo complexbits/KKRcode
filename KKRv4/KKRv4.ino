@@ -1,67 +1,11 @@
 
 /*******************************************************************************
+Kiss Kiss Revolution v4
+Interaction Logic & Sound Control for the Bare Conductive Board
 
- Bare Conductive Random Touch MP3 player
- ---------------------------------------
- 
- Random_Touch_MP3.ino - touch triggered MP3 playback taken randomly from microSD
-
- You need twelve folders named E0 to E11 in the root of the microSD card. Each 
- of these folders can have as many MP3 files in as you like, named however you 
- like (as long as they have a .mp3 file extension).
-
- When you touch electrode E0, a random file from the E0 folder will play. When 
- you touch electrode E1, a random file from the E1 folder will play, and so on. 
- You should note that this is not the same file structure as for Touch_MP3.
-
-  SD card    
-  │
-  ├──E0
-  │    some_mp3.mp3  
-  │    another_mp3.mp3
-  │
-  ├──E1
-  │    dog-barking-1.mp3
-  │    dog-barking-2.mp3
-  │    dog-growling.mp3
-  │    dog-howling.mp3
-  │
-  ├──E2
-  │    1.mp3
-  │    2.mp3
-  │    3.mp3
-  │    4.mp3
-  │    5.mp3
-  │    6.mp3
-  │
-  └──...and so on for other electrodes   
- 
- Based on code by Jim Lindblom and plenty of inspiration from the Freescale 
- Semiconductor datasheets and application notes.
- 
- Bare Conductive code written by Stefan Dzisiewski-Smith and Peter Krige.
- 
- This work is licensed under a MIT license https://opensource.org/licenses/MIT
- 
- Copyright (c) 2016, Bare Conductive
- 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
+Jamie Schwettmann
+@complexbits
+@jstarnow
 
 *******************************************************************************/
 
@@ -308,3 +252,28 @@ void playRandomTrack(int soundmode){
     }
   }  
 }
+
+/**
+ Bare Conductive code written by Stefan Dzisiewski-Smith and Peter Krige  
+ Copyright (c) 2016, Bare Conductive
+ 
+ This work is licensed under a MIT license https://opensource.org/licenses/MIT
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ **/
