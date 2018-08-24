@@ -83,11 +83,8 @@
 // mp3 variables
 SFEMP3Shield MP3player;
 byte result;
-int lastPlayed = 0;
 int makeyPin = 10; //DDT
 int makeyTouch = 0; //DDT
-
-
 
 // sd card instantiation
 SdFat sd;
@@ -98,13 +95,11 @@ SdFile file;
 #define LED_BUILTIN 13
 #endif
 
-// mp3 behaviour defines
-#define REPLAY_MODE TRUE  // By default, touching an electrode repeatedly will 
-                          // play the track again from the start each time.
-                          //
-                          // If you set this to FALSE, repeatedly touching an 
-                          // electrode will stop the track if it is already 
-                          // playing, or play it from the start if it
+// Kiss Timing Variables
+int maxKissLength=5; // max kiss length in Seconds
+int maxGapLength=10; // max gap length in Seconds
+int maxKPM = 80; // fastest kiss speed in Kisses Per Minute
+
 
 void setup(){  
   Serial.begin(192000);
@@ -137,87 +132,97 @@ void setup(){
    }
 }
 
-// Initialize touch counters
-int prevTouch=0;
-int newTouch=0; 
-int prevNoTouch=0; 
+// Initialize kiss counters
+int prevKiss=0;
+int newKiss=0; 
+int prevNoKiss=0; 
 
 // Initialize touch timers
-float touchSecs=0; 
-float touchSecs_init=0;
+float kissTime=0; 
+float kissTime_init=0;
 
-float notouchSecs=0;
-float notouchSecs_init=0;
+float gapTime=0;
+float gapTime_init=0;
 
-int longTouch = 20000;
-int longNoTouch = 100000;
-int minTouchCycle = 5000;
+float longKiss = float(maxKissLength)*1000;
+float longGap = float(maxGapLength)*1000;
+float thisKPM=0;
+float thisKPM_time=0;
+float lastKPM_time=0;
 
 
+// Main Loop
 void loop(){
-
   readMakey();
-
 }
 
 
+// Touch Detection & Logic
 void readMakey(){ 
 
  makeyTouch = digitalRead(makeyPin);   // read the input pin
  
    if (makeyTouch){ // If the input pin is HIGH //////////////////////////////////
     
-        if (prevTouch==0){  // new touch
+        if ( prevKiss==0 ){  // new touch
           
-            touchSecs_init=float(now()); // timestamp for touch initiation
+            kissTime_init=float(millis()); // timestamp for touch initiation
             digitalWrite(LED_BUILTIN, HIGH); // light LED
             Serial.println("pin was just touched");
             
             playRandomTrack(1);  // play track on new touch (normal soundmode=1)
 
             // Reset gap counters   
-            prevNoTouch=0;          
-            notouchSecs=0;
-            notouchSecs_init=0;
+            prevNoKiss=0;          
+            gapTime=0;
+            gapTime_init=0;
 
-            // count new touches
-            newTouch++;
+            // count new kisses
+            newKiss++;
+
+            if ( newKiss % 5 == 0 ){ // every 5 kisses, calculate KPM
+                thisKPM_time=float(millis()); // timestamp now
+                thisKPM = 5/((lastKPM_time - thisKPM_time)/60000); // 5 kisses in this many minutes
+                Serial.print("KPM ");
+                Serial.println(thisKPM);
+                lastKPM_time=thisKPM_time; // update last timestamp
+            }
         }
         
-        prevTouch++;  // count continuous touch loop iterations
-        touchSecs = float(now()) - touchSecs_init; // current touch length
+        prevKiss++;  // count continuous kiss loop iterations
+        kissTime = float(millis()) - kissTime_init; // current kiss length
 
-        if (touchSecs>=longTouch){
-            // Do stuff if the touch has been going a while. (Long kiss soundmode=2)
+        if ( kissTime >= longKiss ){
+            // Do stuff if the kiss has been going a while. (Long kiss soundmode=2)
             playRandomTrack(2);
             
-            // reset touch counter
-            prevTouch=0;
+            // reset kiss counter
+            prevKiss=0;
          }
            
     }else{ // Input pin LOW ////////////////////////////////////////////
       
-        if (prevNoTouch==0){ // new gap
+        if ( prevNoKiss==0 ){ // new gap
             
-            notouchSecs_init=float(now()); // timestamp for gap initiation
+            gapTime_init=float(millis()); // timestamp for gap initiation
             digitalWrite(LED_BUILTIN, LOW); // stop LED 
 
             // Reset touch counters
-            prevTouch = 0; 
-            touchSecs=0;
-            touchSecs_init=0;
+            prevKiss = 0; 
+            kissTime=0;
+            kissTime_init=0;
 
         }
       
-      prevNoTouch++;  // count continous gap loop iterations
-      notouchSecs = float(now()) - notouchSecs_init; // current gap length
+      prevNoKiss++;  // count continous gap loop iterations
+      gapTime = float(millis()) - gapTime_init; // current gap length
 
-      if (notouchSecs>=longNoTouch){
+      if ( gapTime >= longGap ){
           // Do stuff if the gap has been going a while. (Callout soundmode=0)
           playRandomTrack(0);
           
           // reset gap counter
-          prevNoTouch=0;
+          prevNoKiss=0;
       }    
    }
    
