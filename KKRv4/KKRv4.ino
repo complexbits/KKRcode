@@ -4,7 +4,7 @@ Interaction Logic & Sound Control for the Bare Conductive Board
 
 Jamie Schwettmann
 @complexbits
-@jstarnow
+
 
 *******************************************************************************/
 
@@ -38,7 +38,7 @@ int makeyTouch = 0; //DDT
 int maxKissLength=4; // max kiss length in Seconds
 int maxGapLength=15; // max gap length in Seconds
 int maxKPM = 120; // fastest kiss speed in Kisses Per Minute
-
+int minPlayTime=1; // min soundplay time for normal & fast kisses, in Seconds
 
 void setup(){  
   Serial.begin(192000);
@@ -82,6 +82,12 @@ float thisKPM=0;
 float thisKPM_time=0;
 float lastKPM_time=0;
 
+//Initialize soundplay counter
+float playtime=0;
+float playtime_init=0;
+float playtime_min = float(minPlayTime)*1000; // min file playtime for short & normal kisses
+
+
 // Main Loop
 void loop(){
   readMakey();
@@ -115,7 +121,12 @@ void readMakey(){
         lastKPM_time=thisKPM_time; // update last timestamp
       }
       
-      if (!MP3player.isPlaying()){ // if a track isn't currently playing...
+      if (MP3player.isPlaying() ){ // if a track is currently playing...
+        playtime = float(millis()) - playtime_init; // count how long the file has been playing
+      
+      // otherwise if nothing is playing or if the min playtime has passed...
+      }else if (!MP3player.isPlaying() || playtime >= playtime_min){ 
+        // Decide which type of sound to play and play it.
         if (thisKPM >= maxKPM){
           playRandomSound(3); // Fast Kiss soundmode=3
         }else{
@@ -176,7 +187,10 @@ void playRandomSound (int soundmode){
   thisSound = String(random(0, filesPerDir[soundmode]), DEC); 
   thisSound = String(thisSound + ".MP3");
   thisSound.toCharArray(playSound, 8);
-  MP3player.playMP3(playSound);
+
+  playtime_init=float(millis()); // initialize time counter for playtime
+  
+  MP3player.playMP3(playSound); // PLAY THE SOUND
   
   Serial.print("Playing sound: ");
   Serial.print(soundDirs[soundmode]);
