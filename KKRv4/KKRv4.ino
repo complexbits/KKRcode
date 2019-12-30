@@ -121,11 +121,14 @@ void readMakey(){
         lastKPM_time=thisKPM_time; // update last timestamp
       }
       
-      if (MP3player.isPlaying() ){ // if a track is currently playing...
+      if (MP3player.isPlaying()){ // if a track is currently playing...
         playtime = float(millis()) - playtime_init; // count how long the file has been playing
+      }else{
+        playtime=0;
+      }
       
       // otherwise if nothing is playing or if the min playtime has passed...
-      }else if (!MP3player.isPlaying() || playtime >= playtime_min){ 
+      if (!MP3player.isPlaying() || playtime >= playtime_min){ 
         // Decide which type of sound to play and play it.
         if (thisKPM >= maxKPM){
           playRandomSound(3); // Fast Kiss soundmode=3
