@@ -192,7 +192,10 @@ void playRandomSound (int soundmode){
   thisSound.toCharArray(playSound, 8);
 
   playtime_init=float(millis()); // initialize time counter for playtime
-  
+
+  if (MP3player.isPlaying()){
+    MP3player.stopTrack();
+  }
   MP3player.playMP3(playSound); // PLAY THE SOUND
   
   Serial.print("Playing sound: ");
